@@ -1,26 +1,28 @@
-#[macro_use] extern crate rocket;
+mod structs;
+
+#[macro_use]
+extern crate rocket;
+
 use rocket::serde::json::Json;
-use serde::{Deserialize, Serialize};
 use reqwest::Error;
+use structs::{AuctionData, Auction};
 
-#[derive(Serialize, Deserialize)]
-struct BazaarData {
-    products: serde_json::Value,
-}
+#[get("/")]
+async fn get_auctions() -> Result<Json<AuctionData>, String> {
+    let api_key = "f9cfea41-3f48-4fde-b41c-0508ef3eb5ab"; // Your API key
+    let url = format!("https://api.hypixel.net/v2/skyblock/auctions?key={}", api_key);
 
-#[get("/bazaar")]
-async fn get_bazaar() -> Result<Json<BazaarData>, String> {
-    let api_key = "f9cfea41-3f48-4fde-b41c-0508ef3eb5ab";
-    let url = format!("https://api.hypixel.net/skyblock/bazaar?key={}", api_key);
-
+    // Fetch the data from the Hypixel API
     let response = reqwest::get(&url).await.map_err(|err| err.to_string())?;
-    let bazaar_data: BazaarData = response.json().await.map_err(|err| err.to_string())?;
+    //println!("Headers:\n{:#?}", response.headers().get("Age").unwrap());
+    // Parse the JSON response
+    let mut auction_data: AuctionData = response.json().await.map_err(|err| err.to_string())?;
 
-    Ok(Json(bazaar_data))
-
+    Ok(Json(auction_data))
 }
+
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![get_bazaar])
+    rocket::build().mount("/", routes![get_auctions])
 }
